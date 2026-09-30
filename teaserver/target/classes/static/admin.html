@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>峰峰的茶 · 管理后台</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #f5f5f5; color: #333; }
+        .login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #c8102e 0%, #8b0a1f 100%); }
+        .login-box { background: white; padding: 40px; border-radius: 16px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+        .login-box h1 { text-align: center; color: #c8102e; font-size: 28px; margin-bottom: 8px; }
+        .login-box p { text-align: center; color: #999; font-size: 13px; margin-bottom: 28px; }
+        .login-box input { width: 100%; padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 14px; outline: none; transition: border-color .2s; }
+        .login-box input:focus { border-color: #c8102e; }
+        .login-box button { width: 100%; padding: 13px; background: #c8102e; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
+        .login-box button:hover { background: #a00d24; }
+
+        .app { display: none; }
+        .app.active { display: block; }
+        .login-page.hidden { display: none; }
+
+        header { background: #c8102e; color: white; padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.1); position: sticky; top: 0; z-index: 100; }
+        header .logo { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+        header .logo span { color: #ffd54f; }
+        header .user { font-size: 13px; opacity: .9; }
+        header .user button { background: transparent; border: 1px solid rgba(255,255,255,.5); color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; margin-left: 12px; }
+        header .user button:hover { background: rgba(255,255,255,.1); }
+
+        .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: white; padding: 6px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.05); overflow-x: auto; }
+        .tabs button { flex-shrink: 0; padding: 10px 20px; background: transparent; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; color: #666; font-weight: 500; transition: all .2s; }
+        .tabs button:hover { background: #f5f5f5; }
+        .tabs button.active { background: #c8102e; color: white; }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.05); margin-bottom: 16px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-header h2 { font-size: 18px; color: #333; }
+        .card-header .actions { display: flex; gap: 8px; }
+
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .stat { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+        .stat .num { font-size: 28px; font-weight: 700; color: #c8102e; }
+        .stat .label { font-size: 13px; color: #999; margin-top: 6px; }
+
+        button.btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; transition: all .2s; }
+        button.btn-primary { background: #c8102e; color: white; }
+        button.btn-primary:hover { background: #a00d24; }
+        button.btn-outline { background: white; border: 1px solid #ddd; color: #666; }
+        button.btn-outline:hover { border-color: #c8102e; color: #c8102e; }
+        button.btn-sm { padding: 5px 10px; font-size: 12px; }
+        button.btn-danger { background: #ffebee; color: #c62828; }
+        button.btn-danger:hover { background: #ffcdd2; }
+        button.btn-warn { background: #fff8e1; color: #f57f17; }
+        button.btn-warn:hover { background: #ffecb3; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; font-size: 13px; color: #999; border-bottom: 2px solid #eee; font-weight: 600; }
+        td { padding: 14px 12px; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        tr:hover td { background: #fafafa; }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .badge-green { background: #e8f5e9; color: #2e7d32; }
+        .badge-gray { background: #f5f5f5; color: #757575; }
+        .badge-blue { background: #e3f2fd; color: #1565c0; }
+        .badge-orange { background: #fff3e0; color: #ef6c00; }
+        .badge-red { background: #ffebee; color: #c62828; }
+
+        .empty { text-align: center; padding: 60px 20px; color: #999; font-size: 14px; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 12px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid #eee; font-size: 17px; font-weight: 600; }
+        .modal-body { padding: 24px; }
+        .modal-body .field { margin-bottom: 16px; }
+        .modal-body .field label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+        .modal-body .field input, .modal-body .field select, .modal-body .field textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; }
+        .modal-body .field input:focus, .modal-body .field select:focus, .modal-body .field textarea:focus { border-color: #c8102e; }
+        .modal-footer { padding: 16px 24px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #eee; }
+
+        .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; opacity: 0; transition: all .3s; z-index: 2000; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { background: #2e7d32; }
+        .toast.error { background: #c62828; }
+
+        .product-img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: #f5f5f5; }
+        .img-preview { margin-top: 8px; max-width: 120px; max-height: 120px; border-radius: 8px; border: 1px solid #eee; display: none; }
+    </style>
+</head>
+<body>
+
+<!-- ============ 登录页 ============ -->
+<div class="login-page" id="loginPage">
+    <div class="login-box">
+        <h1>峰峰的茶</h1>
+        <p>管理后台</p>
+        <input type="text" id="loginUser" placeholder="管理员账号" value="admin">
+        <input type="password" id="loginPass" placeholder="密码" value="123456">
+        <button onclick="doLogin()">进入后台</button>
+    </div>
+</div>
+
+<!-- ============ 主界面 ============ -->
+<div class="app" id="app">
+    <header>
+        <div class="logo">峰峰的茶 <span>· 管理后台</span></div>
+        <div class="user">
+            <span>admin</span>
+            <button onclick="doLogout()">注销</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="stats" id="statsBar">
+            <div class="stat"><div class="num" id="stRevenue">¥0</div><div class="label">今日营业额</div></div>
+            <div class="stat"><div class="num" id="stOrders">0</div><div class="label">今日订单</div></div>
+            <div class="stat"><div class="num" id="stMembers">0</div><div class="label">今日新增会员</div></div>
+        </div>
+
+        <div class="tabs">
+            <button class="active" onclick="switchTab('product', this)">🍵 商品管理</button>
+            <button onclick="switchTab('category', this)">📂 分类管理</button>
+            <button onclick="switchTab('order', this)">📋 订单管理</button>
+            <button onclick="switchTab('member', this)">👥 会员管理</button>
+            <button onclick="switchTab('sales', this)">📈 销量排行</button>
+        </div>
+
+        <div class="panel active" id="panel-product">
+            <div class="card">
+                <div class="card-header">
+                    <h2>商品列表</h2>
+                    <div class="actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadProducts()">🔄 刷新</button>
+                        <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ 添加茶饮</button>
+                    </div>
+                </div>
+                <div id="productTable"></div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-category">
+            <div class="card">
+                <div class="card-header">
+                    <h2>分类列表</h2>
+                    <div class="actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadCategories()">🔄 刷新</button>
+                        <button class="btn btn-primary btn-sm" onclick="openCategoryModal()">+ 新增分类</button>
+                    </div>
+                </div>
+                <div id="categoryTable"></div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-order">
+            <div class="card">
+                <div class="card-header">
+                    <h2>全部订单</h2>
+                    <div class="actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadOrders()">🔄 刷新</button>
+                    </div>
+                </div>
+                <div id="orderTable"></div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-member">
+            <div class="card">
+                <div class="card-header">
+                    <h2>会员列表</h2>
+                    <div class="actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadMembers()">🔄 刷新</button>
+                    </div>
+                </div>
+                <div id="memberTable"></div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-sales">
+            <div class="card">
+                <div class="card-header">
+                    <h2>销量排行</h2>
+                    <div class="actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadSales()">🔄 刷新</button>
+                    </div>
+                </div>
+                <div id="salesTable"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const BASE = '';
+
+    function $(id) { return document.getElementById(id); }
+
+    function toast(msg, type='') {
+        const t = $('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + type;
+        setTimeout(() => t.className = 'toast ' + type, 2000);
+    }
+
+    async function api(path, params) {
+        try {
+            let url = BASE + path;
+            if (params) {
+                const q = new URLSearchParams(params).toString();
+                url += (url.includes('?') ? '&' : '?') + q;
+            }
+            const res = await fetch(url);
+            return await res.json();
+        } catch(e) {
+            console.error(e);
+            toast('网络请求失败', 'error');
+            return null;
+        }
+    }
+
+    function closeModal() { $('modalOverlay').classList.remove('active'); }
+
+    function openModal(html) {
+        $('modalBox').innerHTML = html;
+        $('modalOverlay').classList.add('active');
+    }
+
+    // ==================== 登录 ====================
+    async function doLogin() {
+        const u = $('loginUser').value.trim();
+        const p = $('loginPass').value.trim();
+        if (!u || !p) { toast('请输入账号和密码', 'error'); return; }
+        const r = await api('/api/admin/login', { username: u, password: p });
+        if (r && r.code === 0) {
+            sessionStorage.setItem('admin_logged', '1');
+            $('loginPage').classList.add('hidden');
+            $('app').classList.add('active');
+            loadStats();
+            loadProducts();
+        } else {
+            toast('账号或密码错误', 'error');
+        }
+    }
+
+    function doLogout() {
+        sessionStorage.removeItem('admin_logged');
+        $('loginPage').classList.remove('hidden');
+        $('app').classList.remove('active');
+    }
+
+    if (sessionStorage.getItem('admin_logged') === '1') {
+        $('loginPage').classList.add('hidden');
+        $('app').classList.add('active');
+        loadStats();
+        loadProducts();
+    }
+
+    // ==================== Tab 切换 ====================
+    function switchTab(name, btn) {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        $('panel-' + name).classList.add('active');
+
+        if (name === 'product') loadProducts();
+        else if (name === 'category') loadCategories();
+        else if (name === 'order') loadOrders();
+        else if (name === 'member') loadMembers();
+        else if (name === 'sales') loadSales();
+    }
+
+    // ==================== 统计 ====================
+    async function loadStats() {
+        const today = new Date().toISOString().slice(0, 10);
+        let revenue = 0, orderCount = 0, memberCount = 0;
+
+        const oRes = await api('/api/order/all');
+        if (oRes && oRes.data) {
+            oRes.data.forEach(o => {
+                if (o.status === 4) return;
+                if (o.createTime && o.createTime.startsWith(today)) {
+                    orderCount++;
+                    revenue += (o.totalPrice || 0);
+                }
+            });
+        }
+
+        const mRes = await api('/api/member/list');
+        if (mRes && mRes.data) {
+            mRes.data.forEach(m => {
+                if (m.createTime && m.createTime.startsWith(today)) memberCount++;
+            });
+        }
+
+        $('stRevenue').textContent = '¥' + revenue.toFixed(2);
+        $('stOrders').textContent = orderCount;
+        $('stMembers').textContent = memberCount;
+    }
+
+    // ==================== 商品管理 ====================
+    let productCache = [];
+
+    function getImageUrl(image) {
+        if (!image || image === 'null') return '';
+        if (image.indexOf('.') > -1) {
+            return '/uploads/' + image;
+        } else {
+            return '/static/' + image + '.png';
+        }
+    }
+
+    async function loadProducts() {
+        $('productTable').innerHTML = '<div class="empty">加载中...</div>';
+        const r = await api('/api/product/listAll');
+        if (!r || !r.data) { $('productTable').innerHTML = '<div class="empty">加载失败</div>'; return; }
+        productCache = r.data;
+
+        if (r.data.length === 0) { $('productTable').innerHTML = '<div class="empty">还没有商品</div>'; return; }
+
+        let html = '<table><thead><tr><th>图片</th><th>名称</th><th>分类</th><th>价格</th><th>状态</th><th style="text-align:right">操作</th></tr></thead><tbody>';
+        r.data.forEach(p => {
+            const imgSrc = getImageUrl(p.image);
+            const status = p.status === 1 ? '<span class="badge badge-green">上架中</span>' : '<span class="badge badge-gray">已下架</span>';
+            html += `<tr>
+      <td>${imgSrc ? '<img class="product-img" src="'+imgSrc+'" onerror="this.style.display=\'none\'">' : '—'}</td>
+      <td><b>${p.name || ''}</b><br><span style="color:#999;font-size:12px">${p.description || ''}</span></td>
+      <td>${(p.category || '未分类').replace(/,/g, '、')}</td>
+      <td style="color:#c8102e;font-weight:600">¥${p.price}</td>
+      <td>${status}</td>
+      <td style="text-align:right">
+        <button class="btn btn-outline btn-sm" onclick="editProduct(${p.id})">编辑</button>
+        <button class="btn btn-warn btn-sm" onclick="toggleProduct(${p.id}, ${p.status})">${p.status===1?'下架':'上架'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id}, '${(p.name||'').replace(/'/g,"\\'")}')">删除</button>
+      </td>
+    </tr>`;
+        });
+        html += '</tbody></table>';
+        $('productTable').innerHTML = html;
+    }
+
+    async function openProductModal(product) {
+        const cRes = await api('/api/category/list');
+        const cats = (cRes && cRes.data) ? cRes.data : [];
+
+        // ★ 把当前商品的分类拆成数组（兼容逗号分隔）
+        const currentCats = product && product.category
+            ? product.category.split(',').map(s => s.trim())
+            : [];
+
+        let catOptions = '';
+        cats.forEach(c => {
+            const sel = currentCats.includes(c.name) ? 'selected' : '';
+            catOptions += `<option value="${c.name}" ${sel}>${c.name}</option>`;
+        });
+
+        const isEdit = !!product;
+        const currentImg = product ? (product.image || '') : '';
+        const currentImgUrl = getImageUrl(currentImg);
+
+        const html = `
+    <div class="modal-header">${isEdit ? '编辑商品' : '添加茶饮'}</div>
+    <div class="modal-body">
+      <div class="field"><label>名称 *</label><input id="mName" value="${product ? (product.name||'') : ''}" placeholder="例如：珍珠奶茶"></div>
+      <div class="field"><label>价格 *</label><input id="mPrice" type="number" step="0.1" value="${product ? product.price : ''}" placeholder="例如：12.0"></div>
+      <div class="field"><label>分类（可多选，按住 Ctrl 选多个）</label>
+        <select id="mCat" multiple size="4" style="height:auto">${catOptions}</select>
+      </div>
+      <div class="field">
+        <label>商品图片（可选）</label>
+        <input type="file" id="mImageFile" accept="image/*" onchange="previewPickImage(this)">
+        <input type="hidden" id="mImage" value="${currentImg}">
+        <div id="mImageTip" style="margin-top:6px;font-size:12px;color:#999">
+          ${currentImg ? '当前：' + currentImg : '未选择（默认使用 default_tea）'}
+        </div>
+        <img id="mImagePreview" class="img-preview" ${currentImgUrl ? 'src="'+currentImgUrl+'" style="display:block"' : ''}>
+      </div>
+      <div class="field"><label>描述</label><textarea id="mDesc" rows="2" placeholder="例如：经典珍珠奶茶">${product ? (product.description||'') : ''}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveProduct(${isEdit ? product.id : 'null'})">保存</button>
+    </div>`;
+
+        openModal(html);
+    }
+
+    // ★ 选择图片后预览 + 自动填充名称
+    function previewPickImage(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+
+            // 预览图
+            const url = URL.createObjectURL(file);
+            const img = $('mImagePreview');
+            img.src = url;
+            img.style.display = 'block';
+            $('mImageTip').textContent = '已选择：' + file.name;
+
+            // ★ 如果名称输入框为空，用图片文件名填充（去掉扩展名）
+            const nameInput = $('mName');
+            if (nameInput && !nameInput.value.trim()) {
+                const dotIndex = file.name.lastIndexOf('.');
+                const baseName = dotIndex > 0 ? file.name.substring(0, dotIndex) : file.name;
+                nameInput.value = baseName;
+                toast('已自动填入名称：' + baseName);
+            }
+        }
+    }
+
+    function openCategoryModal() { openProductModal(); }
+
+    async function saveProduct(id) {
+        const name = $('mName').value.trim();
+        const price = $('mPrice').value.trim();
+        const desc = $('mDesc').value.trim();
+
+        // ★ 多选：把选中的选项拼成 "分类1,分类2" 字符串
+        const selectedOpts = Array.from($('mCat').selectedOptions).map(o => o.value);
+        let cat = selectedOpts.length > 0 ? selectedOpts.join(',') : '本店热销';
+
+        if (!name || !price) { toast('名称和价格必填', 'error'); return; }
+
+        // ★ 先处理图片：如果选了新图就上传
+        let imageName = $('mImage').value.trim();
+        const fileInput = $('mImageFile');
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            toast('图片上传中...');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+                const res = await fetch('/api/upload/image', { method: 'POST', body: formData });
+                const r = await res.json();
+                if (r && r.code === 0) {
+                    imageName = r.data.name;
+                } else {
+                    toast('图片上传失败：' + (r && r.msg || ''), 'error');
+                    return;
+                }
+            } catch (e) {
+                console.error(e);
+                toast('图片上传失败', 'error');
+                return;
+            }
+        }
+
+        if (!imageName) imageName = 'default_tea';
+
+        const params = { name, price, description: desc, category: cat, image: imageName };
+        let r;
+        if (id === null || id === undefined) {
+            r = await api('/api/product/add', params);
+        } else {
+            params.id = id;
+            r = await api('/api/product/update', params);
+        }
+
+        if (r && r.code === 0) {
+            toast('保存成功', 'success');
+            closeModal();
+            loadProducts();
+            loadStats();
+        } else {
+            toast((r && r.msg) || '保存失败', 'error');
+        }
+    }
+
+    function editProduct(id) {
+        const p = productCache.find(x => x.id === id);
+        if (p) openProductModal(p);
+    }
+
+    async function toggleProduct(id, currentStatus) {
+        const newStatus = currentStatus === 1 ? 0 : 1;
+        const r = await api('/api/product/status', { id, status: newStatus });
+        if (r && r.code === 0) {
+            toast(newStatus === 1 ? '已上架' : '已下架', 'success');
+            loadProducts();
+        }
+    }
+
+    function deleteProduct(id, name) {
+        openModal(`
+    <div class="modal-header">删除商品</div>
+    <div class="modal-body"><p>确定删除「<b>${name}</b>」吗？</p><p style="color:#999;font-size:13px;margin-top:8px">此操作不可恢复。</p></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-danger" onclick="confirmDeleteProduct(${id})">删除</button>
+    </div>`);
+    }
+
+    async function confirmDeleteProduct(id) {
+        const r = await api('/api/product/delete', { id });
+        if (r && r.code === 0) {
+            toast('已删除', 'success');
+            closeModal();
+            loadProducts();
+        }
+    }
+
+    // ==================== 分类管理 ====================
+    async function loadCategories() {
+        $('categoryTable').innerHTML = '<div class="empty">加载中...</div>';
+        const r = await api('/api/category/list');
+        if (!r || !r.data) { $('categoryTable').innerHTML = '<div class="empty">加载失败</div>'; return; }
+        if (r.data.length === 0) { $('categoryTable').innerHTML = '<div class="empty">暂无分类</div>'; return; }
+
+        let html = '<table><thead><tr><th>分类名称</th><th>排序</th><th style="text-align:right">操作</th></tr></thead><tbody>';
+        r.data.forEach(c => {
+            const canDelete = c.name !== '本店热销';
+            html += `<tr>
+      <td><b>${c.name}</b></td>
+      <td>${c.sort}</td>
+      <td style="text-align:right">
+        ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id}, '${c.name}')">删除</button>` : '<span style="color:#999;font-size:12px">不可删除</span>'}
+      </td>
+    </tr>`;
+        });
+        html += '</tbody></table>';
+        $('categoryTable').innerHTML = html;
+    }
+
+    function openCategoryModal() {
+        openModal(`
+    <div class="modal-header">新增分类</div>
+    <div class="modal-body">
+      <div class="field"><label>分类名称</label><input id="mCatName" placeholder="例如：咖啡系列"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveCategory()">添加</button>
+    </div>`);
+    }
+
+    async function saveCategory() {
+        const name = $('mCatName').value.trim();
+        if (!name) { toast('分类名不能为空', 'error'); return; }
+        const r = await api('/api/category/add', { name });
+        if (r && r.code === 0) {
+            toast('已添加', 'success');
+            closeModal();
+            loadCategories();
+        } else {
+            toast((r && r.msg) || '添加失败', 'error');
+        }
+    }
+
+    function deleteCategory(id, name) {
+        openModal(`
+    <div class="modal-header">删除分类</div>
+    <div class="modal-body">
+      <p>确定删除「<b>${name}</b>」吗？</p>
+      <p style="color:#999;font-size:13px;margin-top:8px">该分类下的商品会自动转移到「本店热销」。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-danger" onclick="confirmDeleteCategory(${id})">删除</button>
+    </div>`);
+    }
+
+    async function confirmDeleteCategory(id) {
+        const r = await api('/api/category/delete', { id });
+        if (r && r.code === 0) {
+            toast('已删除，商品已转移', 'success');
+            closeModal();
+            loadCategories();
+            loadProducts();
+        } else {
+            toast((r && r.msg) || '删除失败', 'error');
+        }
+    }
+
+    // ==================== 订单管理 ====================
+    const ORDER_STATUS = ['待接单', '制作中', '待取餐', '已完成', '已取消'];
+    const STATUS_CLS = ['badge-orange', 'badge-blue', 'badge-blue', 'badge-green', 'badge-gray'];
+
+    async function loadOrders() {
+        $('orderTable').innerHTML = '<div class="empty">加载中...</div>';
+        const r = await api('/api/order/all');
+        if (!r || !r.data) { $('orderTable').innerHTML = '<div class="empty">加载失败</div>'; return; }
+        if (r.data.length === 0) { $('orderTable').innerHTML = '<div class="empty">暂无订单</div>'; return; }
+
+        let html = '<table><thead><tr><th>订单号</th><th>收货信息</th><th>金额</th><th>状态</th><th>评价</th><th style="text-align:right">操作</th></tr></thead><tbody>';
+        r.data.forEach(o => {
+            const statusCls = STATUS_CLS[o.status] || 'badge-gray';
+            const statusTxt = ORDER_STATUS[o.status] || '未知';
+            let ratingStr = '—';
+            if (o.rating > 0) {
+                ratingStr = '★'.repeat(o.rating) + '☆'.repeat(5 - o.rating);
+                if (o.comment) ratingStr += '<br><span style="font-size:12px;color:#999">' + o.comment + '</span>';
+            }
+            html += `<tr>
+      <td><b>${o.orderNo || ''}</b><br><span style="font-size:12px;color:#999">${o.createTime || ''}</span></td>
+      <td>${o.receiver || ''}<br><span style="font-size:12px;color:#999">${o.phone || ''}<br>${o.address || ''}</span></td>
+      <td style="color:#c8102e;font-weight:600">¥${o.totalPrice || 0}</td>
+      <td><span class="badge ${statusCls}">${statusTxt}</span></td>
+      <td>${ratingStr}</td>
+      <td style="text-align:right">
+        <button class="btn btn-primary btn-sm" onclick="openOrderStatus(${o.id}, ${o.status})">改状态</button>
+        <button class="btn btn-outline btn-sm" onclick="openOrderAddress(${o.id}, '${(o.receiver||'').replace(/'/g,"\\'")}', '${o.phone||''}', '${(o.address||'').replace(/'/g,"\\'")}')">改地址</button>
+      </td>
+    </tr>`;
+        });
+        html += '</tbody></table>';
+        $('orderTable').innerHTML = html;
+    }
+
+    function openOrderStatus(id, current) {
+        let opts = '';
+        ORDER_STATUS.forEach((s, i) => {
+            opts += `<option value="${i}" ${i===current?'selected':''}>${s}</option>`;
+        });
+        openModal(`
+    <div class="modal-header">修改订单状态</div>
+    <div class="modal-body">
+      <div class="field"><label>订单状态</label>
+        <select id="mOrderStatus">${opts}</select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveOrderStatus(${id})">保存</button>
+    </div>`);
+    }
+
+    async function saveOrderStatus(id) {
+        const status = $('mOrderStatus').value;
+        const r = await api('/api/order/status', { id, status });
+        if (r && r.code === 0) {
+            toast('状态已更新', 'success');
+            closeModal();
+            loadOrders();
+            loadStats();
+        }
+    }
+
+    function openOrderAddress(id, receiver, phone, address) {
+        openModal(`
+    <div class="modal-header">修改收货信息</div>
+    <div class="modal-body">
+      <div class="field"><label>收货人</label><input id="mRec" value="${receiver}"></div>
+      <div class="field"><label>电话</label><input id="mPhone" value="${phone}"></div>
+      <div class="field"><label>地址</label><input id="mAddr" value="${address}"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveOrderAddress(${id})">保存</button>
+    </div>`);
+    }
+
+    async function saveOrderAddress(id) {
+        const r = await api('/api/order/address', {
+            id,
+            receiver: $('mRec').value.trim(),
+            phone: $('mPhone').value.trim(),
+            address: $('mAddr').value.trim()
+        });
+        if (r && r.code === 0) {
+            toast('已保存', 'success');
+            closeModal();
+            loadOrders();
+        }
+    }
+
+    // ==================== 会员管理 ====================
+    let memberCache = [];
+
+    async function loadMembers() {
+        $('memberTable').innerHTML = '<div class="empty">加载中...</div>';
+        const r = await api('/api/member/list');
+        if (!r || !r.data) { $('memberTable').innerHTML = '<div class="empty">加载失败</div>'; return; }
+        memberCache = r.data;
+        if (r.data.length === 0) { $('memberTable').innerHTML = '<div class="empty">暂无会员</div>'; return; }
+
+        let html = '<table><thead><tr><th>手机号</th><th>昵称</th><th>余额</th><th>注册时间</th><th style="text-align:right">操作</th></tr></thead><tbody>';
+        r.data.forEach(m => {
+            html += `<tr>
+      <td><b>${m.phone || ''}</b></td>
+      <td>${m.nickname || '茶客'}</td>
+      <td style="color:#c8102e;font-weight:600">¥${m.balance || 0}</td>
+      <td style="font-size:13px;color:#999">${m.createTime || ''}</td>
+      <td style="text-align:right">
+        <button class="btn btn-primary btn-sm" onclick="openRecharge(${m.id}, ${m.balance||0})">改余额</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMember(${m.id}, '${(m.nickname||m.phone||'').replace(/'/g,"\\'")}')">删除</button>
+      </td>
+    </tr>`;
+        });
+        html += '</tbody></table>';
+        $('memberTable').innerHTML = html;
+    }
+
+    function openRecharge(id, current) {
+        openModal(`
+    <div class="modal-header">修改余额</div>
+    <div class="modal-body">
+      <div class="field"><label>当前余额</label><input value="${current}" disabled></div>
+      <div class="field"><label>新余额</label><input id="mNewBalance" type="number" step="0.01" value="${current}"></div>
+      <p style="color:#999;font-size:12px">输入新余额后，会充值/扣除差额。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveBalance(${id}, ${current})">保存</button>
+    </div>`);
+    }
+
+    async function saveBalance(id, current) {
+        const newVal = parseFloat($('mNewBalance').value);
+        if (isNaN(newVal)) { toast('请输入金额', 'error'); return; }
+        const diff = newVal - current;
+        if (diff === 0) { toast('余额未改变'); closeModal(); return; }
+        const r = await api('/api/member/recharge', { id, amount: diff });
+        if (r && r.code === 0) {
+            toast('余额已更新', 'success');
+            closeModal();
+            loadMembers();
+        }
+    }
+
+    function deleteMember(id, name) {
+        openModal(`
+    <div class="modal-header">删除会员</div>
+    <div class="modal-body">
+      <p>确定删除会员「<b>${name}</b>」吗？</p>
+      <p style="color:#999;font-size:13px;margin-top:8px">此操作不可恢复。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-danger" onclick="confirmDeleteMember(${id})">删除</button>
+    </div>`);
+    }
+
+    async function confirmDeleteMember(id) {
+        const r = await api('/api/member/delete', { id });
+        if (r && r.code === 0) {
+            toast('已删除', 'success');
+            closeModal();
+            loadMembers();
+        } else {
+            toast((r && r.msg) || '删除失败', 'error');
+        }
+    }
+
+    // ==================== 销量排行 ====================
+    async function loadSales() {
+        $('salesTable').innerHTML = '<div class="empty">加载中...</div>';
+        const r = await api('/api/order/topSales');
+        if (!r || !r.data) { $('salesTable').innerHTML = '<div class="empty">加载失败</div>'; return; }
+        if (r.data.length === 0) { $('salesTable').innerHTML = '<div class="empty">暂无销售数据</div>'; return; }
+
+        let html = '<table><thead><tr><th style="width:60px">排名</th><th>商品</th><th style="text-align:right">销量</th></tr></thead><tbody>';
+        r.data.forEach((s, i) => {
+            const rankColor = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#f5f5f5';
+            const rankTextColor = i < 3 ? 'white' : '#999';
+            html += `<tr>
+      <td><span style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;background:${rankColor};color:${rankTextColor};font-weight:700;font-size:13px">${i+1}</span></td>
+      <td><b>${s.name || ''}</b></td>
+      <td style="text-align:right;color:#c8102e;font-weight:600">${s.total} 杯</td>
+    </tr>`;
+        });
+        html += '</tbody></table>';
+        $('salesTable').innerHTML = html;
+    }
+
+    // ==================== 点击遮罩关闭弹窗 ====================
+    $('modalOverlay').addEventListener('click', e => {
+        if (e.target.id === 'modalOverlay') closeModal();
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && $('loginPage') && !$('loginPage').classList.contains('hidden')) {
+            doLogin();
+        }
+    });
+</script>
+</body>
+</html>
